@@ -1,3 +1,8 @@
+This project was created as an experiment to test the autonomous
+software engineering capabilities of GPT-6 Astra in OpenAI Codex.
+
+The initial application was generated from a single high-level specification.
+
 # DIJKSTRA ACROSS THE UNIVERSE
 
 Interaktywne obserwatorium 3D: 12 000 proceduralnych gwiazd, kilkaset aktywnych systemów, hierarchiczna sieć transportowa i rzeczywisty algorytm Dijkstry. Aplikacja działa lokalnie, bez kluczy API, serwera danych i zewnętrznych assetów graficznych. Wszystkie światy i korytarze są symulacją, nie katalogiem astronomicznym.
