@@ -5,6 +5,8 @@ The initial application was generated from a single high-level specification.
 
 # DIJKSTRA ACROSS THE UNIVERSE
 
+[**Open Live Demo**](https://dijkstra-across-the-universe.igorhg720.workers.dev)
+
 Interaktywne obserwatorium 3D: 12 000 proceduralnych gwiazd, kilkaset aktywnych systemów, hierarchiczna sieć transportowa i rzeczywisty algorytm Dijkstry. Aplikacja działa lokalnie, bez kluczy API, serwera danych i zewnętrznych assetów graficznych. Wszystkie światy i korytarze są symulacją, nie katalogiem astronomicznym.
 
 ## Uruchomienie
@@ -127,3 +129,217 @@ Przy dostępnej implementacji `document.modelContext` aplikacja rejestruje trzy 
 ## Najważniejsze decyzje projektowe
 
 Kosmos dominuje nad interfejsem; panele można całkowicie ukryć. Kolory mają znaczenie: turkusowy frontier, chłodna pamięć zatwierdzonych obszarów, jasny bieżący węzeł, złota trasa końcowa. Systemy tła dają skalę, a wąska infrastruktura daje zrozumiały graf. Cel wynika z astronomicznie inspirowanych kryteriów misji, podczas gdy droga wynika z kosztów transportu. Ta separacja pozwala zobaczyć, dlaczego bliski świat może wymagać dalekiego i zaskakującego objazdu.
+
+## Deployment — Cloudflare Workers
+
+> **Etap wykonany z pomocą GPT-5.6 Sol**
+> Sama aplikacja i jej architektura zostały wygenerowane w Codexie przez GPT-6 Astra. Konfiguracja oraz pierwszy publiczny deployment na Cloudflare Workers zostały następnie przeprowadzone osobno z pomocą GPT-5.6 Sol.
+
+Projekt można opublikować na **Cloudflare Workers** i uruchamiać całkowicie niezależnie od lokalnego komputera. Po deployu Cloudflare przechowuje i serwuje aplikację, natomiast generowanie galaktyki, Three.js/WebGL oraz symulacja Dijkstry wykonywane są po stronie przeglądarki użytkownika.
+
+### 1. Instalacja i sprawdzenie buildu
+
+Projekt wymaga Node.js 22.13+.
+
+```sh
+npm ci
+npm run build
+```
+
+Przed pierwszym deploymentem warto upewnić się, że produkcyjny build kończy się poprawnie.
+
+### 2. Logowanie do Cloudflare
+
+```sh
+npx wrangler login
+```
+
+Polecenie otworzy przeglądarkę i poprosi o autoryzację konta Cloudflare.
+
+Po zalogowaniu można zweryfikować aktywne konto:
+
+```sh
+npx wrangler whoami
+```
+
+### 3. Pierwsza konfiguracja Vinext dla Cloudflare
+
+Przy pierwszym deployu Vinext może zgłosić:
+
+```text
+Missing Cloudflare deployment setup: Wrangler config.
+Run `vinext init --platform=cloudflare` first.
+```
+
+Ponieważ Vinext jest zależnością projektu, a nie globalną komendą systemową, należy uruchomić go przez `npx`:
+
+```sh
+npx vinext init --platform=cloudflare
+```
+
+Polecenie przygotowuje konfigurację Wranglera potrzebną do publikacji projektu na Cloudflare.
+
+### 4. Konfiguracja cache KV
+
+Konfiguracja Vinext wykorzystuje binding:
+
+```text
+VINEXT_KV_CACHE
+```
+
+Jeżeli podczas pierwszego deploymentu pojawi się błąd podobny do:
+
+```text
+KV namespace '<your-kv-namespace-id>' is not valid.
+```
+
+należy utworzyć namespace KV:
+
+```sh
+npx wrangler kv namespace create VINEXT_KV_CACHE
+```
+
+Cloudflare zwróci identyfikator namespace, np.:
+
+```text
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Następnie w `wrangler.jsonc` należy skonfigurować:
+
+```json
+"kv_namespaces": [
+  {
+    "binding": "VINEXT_KV_CACHE",
+    "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  }
+]
+```
+
+Wartość `id` musi być rzeczywistym identyfikatorem zwróconym przez Cloudflare, a nie placeholderem.
+
+Jeżeli wcześniej konfiguracja zawierała:
+
+```json
+"kv_namespaces": []
+```
+
+należy zastąpić pustą tablicę powyższą konfiguracją.
+
+### 5. Deployment
+
+Po ukończeniu konfiguracji:
+
+```sh
+npx @vinext/cloudflare deploy
+```
+
+Vinext:
+
+1. tworzy produkcyjny build,
+2. przygotowuje Worker,
+3. wysyła wymagane assety,
+4. publikuje aplikację na Cloudflare.
+
+Po poprawnym deployu terminal zwraca publiczny adres aplikacji w domenie Cloudflare Workers.
+
+Przykładowo:
+
+```text
+https://sites-project.<subdomain>.workers.dev
+```
+
+Od tego momentu aplikacja działa niezależnie od komputera, z którego wykonano deployment.
+
+### 6. Kolejne aktualizacje
+
+Po zmianach w kodzie nie trzeba ponownie wykonywać całej konfiguracji.
+
+Wystarczy ponownie uruchomić:
+
+```sh
+npx @vinext/cloudflare deploy
+```
+
+Nowa wersja zastąpi poprzedni deployment.
+
+### Skrócona procedura
+
+Pierwszy deployment:
+
+```sh
+npm ci
+npm run build
+
+npx wrangler login
+npx wrangler whoami
+
+npx vinext init --platform=cloudflare
+
+npx wrangler kv namespace create VINEXT_KV_CACHE
+# Następnie wpisać otrzymane ID do wrangler.jsonc.
+
+npx @vinext/cloudflare deploy
+```
+
+Kolejne deploymenty:
+
+```sh
+npx @vinext/cloudflare deploy
+```
+
+### Troubleshooting
+
+#### Cloudflare API / DNS
+
+Jeżeli Wrangler zgłasza:
+
+```text
+Unable to resolve Cloudflare's API hostname
+(api.cloudflare.com or dash.cloudflare.com)
+```
+
+problem dotyczy połączenia sieciowego lub DNS, a nie buildu aplikacji.
+
+Można sprawdzić rozwiązywanie domeny:
+
+```sh
+nslookup api.cloudflare.com
+```
+
+Warto również sprawdzić VPN, firewall, firmową sieć lub używany resolver DNS.
+
+#### `vinext` is not recognized
+
+Nie należy używać:
+
+```sh
+vinext init --platform=cloudflare
+```
+
+jeżeli Vinext nie został zainstalowany globalnie.
+
+Poprawna komenda dla tego projektu:
+
+```sh
+npx vinext init --platform=cloudflare
+```
+
+#### Nieprawidłowy KV namespace
+
+Błąd:
+
+```text
+KV namespace '<your-kv-namespace-id>' is not valid
+```
+
+oznacza pozostawiony placeholder zamiast rzeczywistego Cloudflare KV Namespace ID.
+
+Utwórz namespace:
+
+```sh
+npx wrangler kv namespace create VINEXT_KV_CACHE
+```
+
+i wpisz zwrócone `id` do `wrangler.jsonc`.
+
