@@ -1,7 +1,10 @@
-This project was created as an experiment to test the autonomous
-software engineering capabilities of GPT-6 Astra in OpenAI Codex.
+This project was created as a deliberate experiment in specification-driven, agentic software engineering.
 
-The initial application was generated from a single high-level specification.
+The goal was to test how well GPT-6 Astra in OpenAI Codex could independently handle a non-trivial software engineering task when given a carefully prepared specification. Instead of iteratively steering the model during implementation, the focus was placed on designing a strong, detailed prompt beforehand.
+
+The specification was developed collaboratively with GPT-5.6 and refined to clearly define the expected system behavior, constraints, architecture, interaction model, and algorithmic goals. It was then provided as a single primary prompt to GPT-6 Astra running at medium reasoning effort.
+
+For the original galaxy-based version of the project, the result produced from that specification was successful enough to be accepted without further implementation iterations. This was intentional: the experiment was specifically designed to evaluate GPT-6's ability to reason through and execute the task autonomously from a well-constructed specification, rather than through continuous human guidance.
 
 # DIJKSTRA ACROSS THE UNIVERSE
 
